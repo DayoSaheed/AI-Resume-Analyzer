@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D Portfolio</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        .project-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            max-width: 300px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .scroll-indicator {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-family: Arial, sans-serif;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="project-info" class="project-info"></div>
+    <div class="scroll-indicator">Scroll to navigate</div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+
+        // Project data
+        const projects = [
+            {
+                position: new THREE.Vector3(0, 0, -10),
+                geometry: new THREE.BoxGeometry(2, 2, 2),
+                color: 0x00ff00,
+                info: "Project 1: Web Application\nA full-stack web app built with React and Node.js"
+            },
+            {
+                position: new THREE.Vector3(-8, 3, -20),
+                geometry: new THREE.SphereGeometry(1.5, 32, 32),
+                color: 0xff0000,
+                info: "Project 2: Mobile App\nCross-platform mobile application using Flutter"
+            },
+            {
+                position: new THREE.Vector3(8, -3, -30),
+                geometry: new THREE.ConeGeometry(1.5, 2, 32),
+                color: 0x0000ff,
+                info: "Project 3: Game Development\n3D game created with Unity"
+            }
+        ];
+
+        // Create project meshes
+        const projectMeshes = projects.map(project => {
+            const material = new THREE.MeshPhongMaterial({ color: project.color });
+            const mesh = new THREE.Mesh(project.geometry, material);
+            mesh.position.copy(project.position);
+            mesh.userData.info = project.info;
+            scene.add(mesh);
+            return mesh;
+        });
+
+        // Camera position
+        camera.position.z = 5;
+
+        // Scroll handling
+        let scrollPosition = 0;
+        document.addEventListener('wheel', (event) => {
+            scrollPosition += event.deltaY * 0.01;
+            scrollPosition = Math.max(0, Math.min(scrollPosition, 30));
+        });
+
+        // Raycaster for object interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const projectInfo = document.getElementById('project-info');
+
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+        document.addEventListener('mousemove', onMouseMove);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update camera position based on scroll
+            camera.position.z = 5 + scrollPosition;
+
+            // Rotate all project meshes
+            projectMeshes.forEach(mesh => {
+                mesh.rotation.x += 0.01;
+                mesh.rotation.y += 0.01;
+            });
+
+            // Check for intersections
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(projectMeshes);
+
+            if (intersects.length > 0) {
+                projectInfo.style.opacity = 1;
+                projectInfo.textContent = intersects[0].object.userData.info;
+            } else {
+                projectInfo.style.opacity = 0;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
